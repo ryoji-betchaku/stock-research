@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - '**'  # Trigger on all branches
-
+ 
 # Define the jobs
 jobs:
   build:
