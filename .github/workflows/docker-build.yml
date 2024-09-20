@@ -1,0 +1,63 @@
+name: Build and Push Docker Image
+
+# Run the workflow when pushing to the main branch
+on:
+  push:
+    branches:
+      - '**'  # Trigger on all branches
+
+# Define the jobs
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Docker
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Step 4: Build the Docker image
+      - name: Build the Docker image
+        run: |
+          docker build -t flask-app:latest .
+      
+
+  wiz-cli-image-scan:
+    name: 'Wiz-cli Image Scan'
+    runs-on: ubuntu-latest
+    env:
+      SCAN_PATH: "." # Set the relative path in the repo to build the image from
+      TAG: "docker-tag" # Set the tag to use for the image
+      POLICY: "ryo-test-2" # Set the desired Wiz CLI policy to use
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      # Build the Docker image (skip this if image is already built in another job)
+      - name: Build the Docker image
+        run: cd $SCAN_PATH && docker build . --tag $TAG
+
+      # Download Wiz CLI
+      - name: Download Wiz CLI
+        run: curl -o wizcli https://downloads.wiz.io/wizcli/latest/wizcli-linux-amd64 && chmod +x wizcli
+
+      # Authenticate to Wiz
+      - name: Authenticate to Wiz
+        run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
+        env:
+          WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
+          WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
+
+      # Run wiz-cli docker image scan
+      - name: Run wiz-cli docker image scan
+        run: ./wizcli docker scan --image $TAG --policy "$POLICY"
