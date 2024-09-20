@@ -1,0 +1,51 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Responsive layout adjustments */
+@media screen and (max-width: 600px) {
+    .container {
+        width: 100%;
+        padding: 0;
+        margin-bottom: 0; /* Reduces space below the image */
+    }
+
+    /* Adjustments for smaller screens */
+    .form-input, .form-button {
+        width: 100%;
+        margin-top: 5px;
+    }
+}
+
+/* Styling for form and elements */
+.form-input, .form-button {
+    padding: 10px;
+    margin-top: 20px;
+}
+
+.custom-blue-header {
+    background-color: #0665d1; /* Bootstrap primary blue */
+    color: white; /* Ensuring text is white for better readability */
+}
+
+
+/* Style for even rows in tbody */
+#metrics-table tbody tr:nth-child(even) {
+    background-color: #e1e4ea; /* Light gray color */
+}
+
+/* Style for odd rows in tbody */
+#metrics-table tbody tr:nth-child(odd) {
+    background-color: #ffffff; /* White color */
+}
+
+img {
+    width:  105px; /* Example width */
+    height: auto; /* Maintain aspect ratio */
+    margin: 5px; /* Example margin */
+}
+
+/* Add other styles as needed */
+
+

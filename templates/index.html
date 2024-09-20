@@ -1,0 +1,264 @@
+<!-- templates/index.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/style.css">
+
+    <!-- Add other necessary scripts and CSS files -->
+    <title>Stock Analysis</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { background-color: #FFFFFF; }
+        .container { margin-top: 50px; }
+        h1 { color: #232c36; }
+        .table-hover tbody tr:hover { background-color: #f5f5f5; }
+        .fade-in { animation: fadeIn ease 2s; }
+        @keyframes fadeIn { 0% {opacity:0;} 100% {opacity:1;} }
+    </style>
+
+   
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css">
+  
+    <!-- jQuery Library -->
+    <!-- <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.js"></script> -->
+
+    <!-- DataTables Script -->
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
+
+
+    <script>
+    $(document).ready(function() {
+        $("#companyName").autocomplete({
+            source: function(request, response) {
+                $.getJSON("/autocomplete", { q: request.term }, function(data) {
+                    // Assuming 'data' is the JSON array returned from Alpha Vantage
+                    // Map it to the format expected by jQuery UI Autocomplete
+                    var formattedData = $.map(data, function(item) {
+                        return {
+                            label: item['symbol'] + ' - ' + item['company'], // Customize this format as needed
+                            value: item['symbol']
+                        };
+                    });
+                    response(formattedData);
+                });
+            },
+            minLength: 1,  // Trigger the autocomplete after two characters
+            select: function(event, ui) {
+                selectedTicker = true;
+                // Optional: action to take when a suggestion is selected
+                // e.g., filling other form fields or displaying additional info
+            },
+            change: function(event, ui) {
+            if (!ui.item && !selectedTicker) {
+                // User didn't select a suggestion, clear the input
+                $(this).val('');
+            }
+            selectedTicker = false;  // Reset the flag for the next interaction
+        }
+        });
+    });
+    </script>
+    <!-- Add Chart.js -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
+
+
+    <style>
+        .chart-container {
+            display: flex;
+            justify-content: space-around;
+        }
+        .chart {
+            width: 10%;
+            height: 300px; /* Adjust height as needed */
+        }
+    </style>
+</head>
+
+<body>
+   
+    <!-- Add this in your index.html where you want to display the error message -->
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    <div class="container">
+        <img src="{{ url_for('static', filename='myicon.png') }}" alt="ryobet">
+        <h2 class="text-center stock-title">Stock Analysis</h2>
+
+
+
+        <b>Top Tech Stock News</b>
+        <ul>
+            {% for article in news %}
+                <li><a href="{{ article.link }}" target="_blank">{{ article.title }}</a></li>
+            {% endfor %}
+        </ul>
+
+        <form method="post" id="companyForm">
+            <div class="form-group">
+                <b><label for="companyName">Enter Stock Symbol:</label></b>
+                <input type="text" class="form-control" id="companyName" name="company_name" placeholder="e.g. AAPL">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+
+
+
+        <div id="companyInfo" class="text-center mt-4 fade-in" style="display: none;">
+            <h2>Company: <span id="companyNameDisplay"></span></h2>
+            <p id="companyInfoDisplay"></p>
+        </div>
+
+        <hr>
+        {% if company_data %}
+        <b>Stock Data for {{ ticker }}</b>
+        <label>
+            <input type="checkbox" id="toggleLine2" checked>
+            Show S&P500
+        </label>
+        <canvas id="stockChart"></canvas>
+        
+            <script>
+                var ctx = document.getElementById('stockChart').getContext('2d');
+                var line2Visible = true; // Initial visibility of line 2
+
+                var stockChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: {{ dates |  tojson | safe }},
+                        datasets: [{
+                            label:  '{{ ticker }}',
+                            data: {{ prices | tojson | safe }},
+                            backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                            borderColor: 'rgba(0, 123, 255, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y-axis-1',
+                        },
+                        {
+                            label: 'S&P',
+                            data: {{ prices2 | tojson | safe }},
+                            borderColor: 'rgba(54, 162, 235, 1)', // Second line color
+                            borderWidth: 1,
+                            yAxisID: 'y-axis-2',
+                            hidden: !line2Visible, // Controlled by the checkbox
+                        }]
+                    },
+                    options: {
+                                scales: {
+                                yAxes: [{
+                                    id: 'y-axis-1',
+                                    type: 'linear',
+                                    position: 'left',
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: '{{ ticker }}', // Add your label for the first y-axis
+                                        fontColor: '#000'
+                                    },
+                                    ticks: {
+                                        beginAtZero: false
+                                    }
+                            }, {
+                            id: 'y-axis-2',
+                            type: 'linear',
+                            position: 'right',
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'S&P500', // Add your label for the second y-axis
+                                fontColor: '#000'
+                            },
+                            gridLines: {
+                                drawOnChartArea: false // Only draw the grid lines for one axis
+                            },
+                            ticks: {
+                                beginAtZero: false
+                            }
+                        }]
+                    }
+                }
+            });
+            // Function to toggle the visibility of Line 2
+            document.getElementById('toggleLine2').addEventListener('change', function() {
+                line2Visible = this.checked;
+                stockChart.data.datasets[1].hidden = !line2Visible; // Toggle visibility
+                stockChart.update(); // Update the chart
+            });
+            </script>
+        {% endif %}
+        <hr>
+      
+        <table class="table table-bordered table-hover" id="metrics-table">
+            <thead class="custom-blue-header">
+                {% if company_data %}
+                    <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                    </tr>
+                {% endif %}
+            </thead>
+            <tbody>
+                {% if company_data %}
+                    {% for row in company_data %}
+                        <tr><td style="width: 30%;">{{ row.key }}</td><td>{{ row.value }}</td></tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+        
+    
+    <!-- New Table for Titles and Links -->
+    {% if company_data %}
+   
+        <b>Related News for {{ ticker }}</b>
+        <ul>
+            {% for item in company_news %}
+            
+                <li><a href="{{ item.link }}" target="_blank">{{  item.title  }}</a></li>
+        
+            {% endfor %}
+        </ul>
+
+    <hr>
+
+
+    <!-- <div class="container mt-4">
+        <b>Related News</b>
+        <table class="table table-bordered table-hover">
+            <thead class="custom-blue-header">
+                <tr>
+                    <th>Title</th>
+                    <th>Link</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in company_news %}
+                    <tr>
+                        <td>{{ item.title }}</td>
+                        <td><a href="{{ item.link }}" target="_blank">{{ item.link }}</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div> -->
+    {% endif %}
+   
+    <script>
+        $(document).ready( function () {
+            $('#metrics-table').DataTable({
+                "ordering": false  // This disables sorting
+            });
+        } );
+    </script>
+</body>
+<div class="container mt-4">
+<footer>
+    <p>© 2024 RyoBet Finance.</p>
+</footer>
+</div>
+</html>
