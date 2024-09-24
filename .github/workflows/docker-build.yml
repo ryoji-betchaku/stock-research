@@ -60,4 +60,4 @@ jobs:
 
       # Run wiz-cli docker image scan
       - name: Run wiz-cli docker image scan
-        run: ./wizcli docker scan --image $TAG --policy "$POLICY"
+        run: ./wizcli docker scan --image $TAG --format sarif --policy "$POLICY"
